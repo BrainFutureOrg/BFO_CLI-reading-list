@@ -7,7 +7,11 @@
 
 book book_create(char* book_name, char* book_path)
 {
-    return  (book){book_name, book_path};
+    char *book_name_copied = calloc(strlen(book_name) + 1, sizeof(char ));
+    strcpy(book_name_copied, book_name);
+    char *book_path_copied = calloc(strlen(book_path) + 1, sizeof(char ));
+    strcpy(book_path_copied, book_path);
+    return  (book){book_name_copied, book_path_copied};
 }
 
 void free_book(book this_book)
@@ -41,7 +45,8 @@ themed_book_list* themed_book_list_add_book_list(themed_book_list *this_themed_b
 {
     themed_book_list *new_element = calloc(sizeof(themed_book_list), 1);
     new_element->next = this_themed_book_list;
-    new_element->theme = theme;
+    new_element->theme = calloc(strlen(theme) + 1, sizeof(char ));
+    strcpy(new_element->theme, theme);
     new_element->this_book_list = new_book_list;
     return new_element;
 }
