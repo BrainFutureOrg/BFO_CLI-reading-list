@@ -1,66 +1,26 @@
 #include "start_menu.h"
 #include <stdio.h>
 #include <string.h>
+#include "../IO/input.h"
+#include "errno.h"
+#include "../terminal_UI/tables.h"
+#include "../book/book_opener.h"
 
-void print_table(char **header, char ***table, unsigned int columns, unsigned int rows, char *column_separator, char header_separator, char *side_separator){
-    unsigned int col_width[columns];
-    for(unsigned int *col_width_ptr = col_width; col_width_ptr<col_width+columns; col_width_ptr++, header++){
-        *col_width_ptr = strlen(*header);
-    }
-    for(char ***table_ptr = table; table_ptr<table+rows; table_ptr++){
-        char **row_ptr = *table_ptr;
-        for(unsigned int *col_width_ptr = col_width; col_width_ptr<col_width+columns; col_width_ptr++, row_ptr++){
-            unsigned int str_len = strlen(*row_ptr);
-            if(str_len>*col_width_ptr){
-                *col_width_ptr = str_len;
-            }
-        }
-    }
-    header -= columns;
-
-    printf("%s", side_separator);
-    for(unsigned int *col_width_ptr = col_width; col_width_ptr<col_width+columns; col_width_ptr++, header++){
-        if(col_width_ptr>col_width){
-            printf("%s", column_separator);
-        }
-        printf("%s", *header);
-        for(unsigned int spaces = *col_width_ptr - strlen(*header); spaces>0; spaces--){
-            putchar(' ');
-        }
-    }
-    printf("%s\n", side_separator);
-    header -= columns;
-
-    for(unsigned int sep_spaces = strlen(side_separator) * 2 + strlen(column_separator) * (columns - 1); sep_spaces>0; sep_spaces--){
-        putchar(header_separator);
-    }
-    for(unsigned int *col_width_ptr = col_width; col_width_ptr<col_width+columns; col_width_ptr++){
-        for(unsigned int i = 0; i<*col_width_ptr; i--){
-            putchar(header_separator);
-        }
-    }
-    putchar('\n');
-
-    for(char ***table_ptr=table; table_ptr<table+rows; table_ptr++){
-        printf("%s", side_separator);
-        char **row_ptr = *table_ptr;
-        for(unsigned int *col_width_ptr = col_width; col_width_ptr<col_width+columns; col_width_ptr++, row_ptr++){
-            if(col_width_ptr>col_width){
-                printf("%s", column_separator);
-            }
-            printf("%s", *row_ptr);
-            for(unsigned int spaces = *col_width_ptr - strlen(*row_ptr); spaces>0; spaces--){
-                putchar(' ');
-            }
-        }
-        printf("%s\n", side_separator);
-    }
-}
 
 #define DEFAULT_TABLE_SEPARATORS "|", '-', ""
 
 void print_theme_list(themed_book_list *list, char add_id){
+    if(!list){
+        printf("List not specified ...\n");
+        return;
+    }
     char ** header = malloc((1 + add_id) * sizeof(char*));
+    if(add_id){
+        header[0] = "id";
+        header[1] = "theme";
+    }else{
+        header[0] = "theme";
+    }
     unsigned int rows = 0;
     for(themed_book_list *list_ptr = list; list_ptr!=NULL; list_ptr = list_ptr->next, rows++);
     // Yes, after this 100% un-optimal pass through whole list code is hyper-optimized. Reason is because I can.
@@ -74,18 +34,28 @@ void print_theme_list(themed_book_list *list, char add_id){
                 id_digit_change *= 10;
                 id_str_len++;
             }
-            *table_ptr[0] = malloc(id_str_len* sizeof(char*));
+            (*table_ptr)[0] = malloc(id_str_len* sizeof(char*));
             sprintf(*table_ptr[0], "%d", id);
-            *table_ptr[1] = list_ptr->theme;
+            (*table_ptr)[1] = list_ptr->theme;
         }else{
             **table_ptr = list_ptr->theme;
         }
     }
     print_table(header, table, 1 + add_id, rows, DEFAULT_TABLE_SEPARATORS);
+    free(header);
+    free(table);
 }
 
 void print_book_list(book_list *list, char add_id){
     char ** header = malloc((2 + add_id) * sizeof(char*));
+    if(add_id){
+        header[0] = "id";
+        header[1] = "name";
+        header[2] = "path";
+    }else{
+        header[0] = "name";
+        header[1] = "path";
+    }
     unsigned int rows = 0;
     for(book_list *list_ptr = list; list_ptr!=NULL; list_ptr = list_ptr->next, rows++);
     // Yes, after this 100% un-optimal pass through whole list code is hyper-optimized. Reason is because I can №2
@@ -99,19 +69,39 @@ void print_book_list(book_list *list, char add_id){
                 id_digit_change *= 10;
                 id_str_len++;
             }
-            *table_ptr[0] = malloc(id_str_len* sizeof(char*));
+            (*table_ptr)[0] = malloc(id_str_len* sizeof(char*));
             sprintf(*table_ptr[0], "%d", id);
-            *table_ptr[1] = list_ptr->this_book.book_name;
-            *table_ptr[2] = list_ptr->this_book.book_path;
+            (*table_ptr)[1] = list_ptr->this_book.book_name;
+            (*table_ptr)[2] = list_ptr->this_book.book_path;
         }else{
-            *table_ptr[0] = list_ptr->this_book.book_name;
-            *table_ptr[1] = list_ptr->this_book.book_path;
+            (*table_ptr)[0] = list_ptr->this_book.book_name;
+            (*table_ptr)[1] = list_ptr->this_book.book_path;
         }
     }
     print_table(header, table, 2 + add_id, rows, DEFAULT_TABLE_SEPARATORS);
 }
 
-void start_basic_list_submenu(book_list *list, char *show){
+#define DEFAULT_LIST_CHOICE_MESSAGES "Index out of range\n", "Choice not recognised\n"
+
+book * book_choice_dialogue(book_list *list, char *index_out_message, char *choice_not_recognised_message){
+    int choice;
+    choice = input_int("Input book number");
+    if(errno){
+        printf("%s", choice_not_recognised_message);
+        errno=0;
+        return NULL;
+    }
+    while(choice-->0 && list!=NULL){
+        list = list->next;
+    }
+    if(!list){
+        printf("%s", index_out_message);
+        return NULL;
+    }
+    return &list->this_book;
+}
+
+void start_basic_list_submenu(themed_book_list *themed_list, char *show){
     const char *basic_submenu = "Choose option:\n"
                                 "0 - exit\n"
                                 "1 - show\n"
@@ -125,29 +115,68 @@ void start_basic_list_submenu(book_list *list, char *show){
         if(*show){
             printf("%s", basic_submenu);
         }
-        scanf("%d", &option);//TODO NO scanf
-        switch (option){ //TODO implement 2,3,4,6
+        option = input_int("");
+        if(errno){
+            printf("Not an int");
+            errno=0;
+            continue;
+        }
+        switch (option){
             case 0:
-                printf("Exiting ...");
+                printf("Exiting ...\n");
                 break;
             case 1:
-                print_book_list(list, 1);
+                print_book_list(themed_list->this_book_list, 1);
                 break;
-
+            case 2:
+                printf("Input book name\n");
+                char *name = input_string();
+                printf("Input book path\n");
+                char *path = input_string();
+                book b = book_create(name, path);
+                themed_list->this_book_list = book_list_add_book(themed_list->this_book_list, b);
+                break;
+            case 3:
+                ;
+                book *book_to_delete = book_choice_dialogue(themed_list->this_book_list, DEFAULT_LIST_CHOICE_MESSAGES);
+                if(book_to_delete){
+                    themed_list->this_book_list = book_list_delete_book(themed_list->this_book_list, book_to_delete->book_path);
+                }
+                break;
+            case 4:
+                ;
+                book *book_to_rename = book_choice_dialogue(themed_list->this_book_list, DEFAULT_LIST_CHOICE_MESSAGES);
+                if(book_to_rename){
+                    printf("Write a new name\n");
+                    char* new_name = input_string();
+                    free(book_to_rename->book_name);
+                    book_to_rename->book_name = new_name;
+                }
+                break;
             case 5:
                 *show = !*show;
                 break;
+            case 6:
+                ;
+                book *book_to_open = book_choice_dialogue(themed_list->this_book_list, DEFAULT_LIST_CHOICE_MESSAGES);
+                if(book_to_open){
+                    open_book(*book_to_open);
+                }
+                break;
             default:
-                printf("Choice not recognised");
+                printf("Choice not recognised\n");
         }
     }
 }
 
-#define DEFAULT_LIST_CHOICE_MESSAGES "Index out of range\n", "Choice not recognised\n"
-
 themed_book_list* list_choice_dialogue(themed_book_list *themed_list, char* index_out_message, char* choice_not_recognised_message){
-    unsigned int choice;
-    scanf("%d", &choice);//TODO no scanf
+    int choice;
+    choice = input_int("Choose list number\n");
+    if(errno){
+        printf("%s", choice_not_recognised_message);
+        errno=0;
+        return NULL;
+    }
     while(choice-->0 && themed_list!=NULL){
         themed_list = themed_list->next;
     }
@@ -157,7 +186,7 @@ themed_book_list* list_choice_dialogue(themed_book_list *themed_list, char* inde
     return themed_list;
 }
 
-void start_basic_menu(start_menu *this, themed_book_list *themed_list, read_conf conf, void* additional_data){
+void start_basic_menu(start_menu *this, themed_book_list *themed_list, read_conf conf){
     const char *basic_menu = "Choose option:\n"
                              "0 - exit\n"
                              "1 - list all lists\n"
@@ -167,7 +196,8 @@ void start_basic_menu(start_menu *this, themed_book_list *themed_list, read_conf
                              "5 - create new list\n"
                              "6 - delete list\n"
                              "7 - save changes\n"
-                             "8 - save changes as new config\n";
+                             "8 - save changes as new config\n"
+                             "9 - load config\n";
     printf("Welcome user\n");
     int option = -1;
     char show_menu_list = 1, show_list_submenu_list = 1;
@@ -175,7 +205,12 @@ void start_basic_menu(start_menu *this, themed_book_list *themed_list, read_conf
         if(show_menu_list){
             printf("%s", basic_menu);
         }
-        scanf("%d", &option);//TODO NO scanf
+        option = input_int("");
+        if(errno){
+            printf("Not an int");
+            errno=0;
+            continue;
+        }
         switch (option){
             case 0:
                 printf("Exiting main menu ...\n");
@@ -193,34 +228,59 @@ void start_basic_menu(start_menu *this, themed_book_list *themed_list, read_conf
             case 3:
                 result = list_choice_dialogue(themed_list, DEFAULT_LIST_CHOICE_MESSAGES);
                 if(result){
-                    start_basic_list_submenu(result->this_book_list, &show_list_submenu_list);
+                    start_basic_list_submenu(result, &show_list_submenu_list);
                 }
                 break;
             case 4:
-                option = !option;
+                show_menu_list = !show_menu_list;
                 break;
             case 5:
                 printf("Enter list name");
-                char *dummy_input = "f";//TODO make actual input with io lib
-                book_list *new_list = malloc(sizeof(struct book_list));
-                themed_book_list_add_book_list(themed_list, dummy_input, new_list);
+                char *inp2 = input_string();
+                //book_list *new_list = malloc(sizeof(struct book_list));
+                themed_list = themed_book_list_add_book_list(themed_list, inp2, NULL);
                 break;
             case 6:
                 result = list_choice_dialogue(themed_list, DEFAULT_LIST_CHOICE_MESSAGES); // code not optimal (
                 if(result){
-                    themed_book_list_delete_theme(themed_list, result->theme);
+                    themed_list = themed_book_list_delete_theme(themed_list, result->theme);
                 }
                 break;
             case 7:
                 if(this->current_conf_path==NULL){
-                    //TODO input new path
+                    printf("You don't have predefined config file, creating new ...\n");
+                }else
+                {
+                    conf.write_config(this->current_conf_path, themed_list);
+                    break;
                 }
-                conf.write_config(this->current_conf_path, themed_list);
-                break;
             case 8:
-                ;
-                char *new_path = "dummy_path";//TODO actual IO
+                printf("Input filename\n");
+                char *new_path = input_string();
                 conf.write_config(new_path, themed_list);
+                if(this->current_conf_path){
+                    free(this->current_conf_path);
+                }
+                this->current_conf_path = new_path;
+                break;
+            case 9:
+                printf("Input filename\n");
+                new_path = input_string();
+                themed_book_list *temp = conf.read_config(new_path);
+                if(temp)
+                {
+                    free_themed_book_list(themed_list);
+                    themed_list = temp;
+                    if (this->current_conf_path)
+                    {
+                        free(this->current_conf_path);
+                    }
+                    this->current_conf_path = new_path;
+                }else{
+                    free(new_path);
+                    printf("Conf file not opened or empty\n");
+                }
+                break;
             default:
                 printf("Choice not recognised\n");
         }

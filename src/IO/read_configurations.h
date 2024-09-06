@@ -9,8 +9,10 @@
 
 typedef struct config_options
 {
-    themed_book_list (*read_config)(char *path);
+    themed_book_list *(*read_config)(char *path);
     void (*write_config)(char *path, themed_book_list *list);
 } read_conf;
+
+read_conf create_read_conf_txt();
 
 #endif //BFO_CLI_READING_LIST_SRC_IO_READ_CONFIGURATIONS_H

@@ -8,8 +8,10 @@
 typedef struct start_menu{
     void *additional_data; //because user may have whatever configs and UI
     char *current_conf_path;
-    void (*start_menu)(struct start_menu *this, themed_book_list *themed_list, read_conf conf, void* additional_data);
+    void (*start_menu)(struct start_menu *this, themed_book_list *themed_list, read_conf conf);
 
 }start_menu;
+
+start_menu create_basic_menu(char *initial_conf_path);
 
 #endif
