@@ -43,6 +43,8 @@ add_executable(BFO_CLI_reading_list
         src/terminal_UI/menus/char_menu.c
         src/terminal_UI/menus/char_menu.h
         src/terminal_UI/menus/table_selection_menu.c
-        src/terminal_UI/menus/table_selection_menu.h)
+        src/terminal_UI/menus/table_selection_menu.h
+        src/terminal_UI/basic_structs.c
+        src/terminal_UI/basic_structs.h)
 
 target_link_libraries(BFO_CLI_reading_list m)
