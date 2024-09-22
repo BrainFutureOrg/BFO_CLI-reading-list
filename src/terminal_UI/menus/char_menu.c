@@ -5,7 +5,7 @@
 #include "char_menu.h"
 #include "../../terminal_IO/read_keys.h"
 
-void match_char_callback(char c, void *menu_ptr)
+void match_char_callback(char c, void *menu_ptr)// TODO finish
 {
     char_menu *menu = menu_ptr;
     char_menu_callback *callback_ptr = menu->callbacks;
@@ -26,6 +26,10 @@ void start_char_menu_IO(char_menu *menu)// TODO implement terminal mode switchin
     callbacks.process_char = match_char_callback;
     callbacks.process_arrow = NULL;
     callbacks.process_ctrl = NULL;
+    while (!menu->stop)
+    {
+        start_read_process_keys(callbacks);
+    }
 }
 
 void print_char_menu(char_menu *menu)
@@ -39,7 +43,7 @@ void print_char_menu(char_menu *menu)
     table.header = menu->header;
     table.max_rows = menu->bounds.row_end - menu->bounds.row_start - (table.header != NULL);
     char key_last = (char)!menu->key_first;
-    if (menu->orientation == CHAR_MENU_ORIENTATION_HORIZONTAL)
+    if (menu->orientation == CHAR_MENU_ORIENTATION_HORIZONTAL)//TODO fix same as next
     {
         char *body[1][2 * menu->callback_num];
         unsigned int col_width[2 * menu->callback_num];
@@ -71,11 +75,14 @@ void print_char_menu(char_menu *menu)
     }
     else if (menu->orientation == CHAR_MENU_ORIENTATION_VERTICAL)
     {
-        char *body[menu->callback_num][2];
+        char **body[menu->callback_num];
         unsigned int desc_width = 0;
         for (int i = 0; i < menu->callback_num; i++)
         {
-            char c[2] = {menu->callbacks[i].to_match, '\0'};
+            body[i] = malloc(2 * sizeof(char *));
+            char *c = malloc(2 * sizeof(char));
+            c[0] = menu->callbacks[i].to_match;
+            c[1] = '\0';
             body[i][key_last] = c;
             body[i][menu->key_first] = menu->callbacks[i].description;
             unsigned int description_len = strlen(menu->callbacks[i].description);
@@ -99,7 +106,7 @@ void print_char_menu(char_menu *menu)
                 }
             }
         }
-        table.table = (char ***)body;
+        table.table = body;
         table.rows = menu->callback_num;
         table.columns = 2;
         table.col_width = col_width;

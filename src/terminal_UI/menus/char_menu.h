@@ -40,6 +40,11 @@ typedef struct
     char_menu_orientation orientation;
     row_col_rectangle bounds;
     char_menu_default_callback default_callback;
+    char stop;
 } char_menu;
+
+void print_char_menu(char_menu *menu);
+
+void start_char_menu_IO(char_menu *menu);
 
 #endif //BFO_CLI_READING_LIST_SRC_TERMINAL_UI_MENUS_CHAR_MENU_H

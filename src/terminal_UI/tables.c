@@ -116,7 +116,7 @@ void print_table_colored_header(table_colored table)
         {
             printf("%s", table.settings->to_be_continued_cell);
         }
-        for (int i = 0; i < spaces_post; i++)
+        for (int i = 0; i < /*spaces_post*/ *width_ptr - spaces_pre - str_chars; i++)
         {
             putchar(' ');
         }
@@ -205,7 +205,7 @@ void print_table_colored_body(table_colored table)
             {
                 printf("%s", table.settings->to_be_continued_cell);
             }
-            for (int k = 0; k < spaces_post; k++)
+            for (int k = 0; k < *width_ptr - spaces_pre - str_chars; k++)
             {
                 putchar(' ');
             }
