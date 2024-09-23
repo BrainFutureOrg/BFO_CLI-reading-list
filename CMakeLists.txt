@@ -49,6 +49,8 @@ add_executable(BFO_CLI_reading_list
         src/terminal_UI/layout/row_layout.c
         src/terminal_UI/layout/row_layout.h
         src/terminal_UI/layout/base_containers.c
-        src/terminal_UI/layout/base_containers.h)
+        src/terminal_UI/layout/base_containers.h
+        src/terminal_UI/input/input_line.c
+        src/terminal_UI/input/input_line.h)
 
 target_link_libraries(BFO_CLI_reading_list m)
